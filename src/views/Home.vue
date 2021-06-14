@@ -21,11 +21,7 @@
       </nav>
       <section class="section">
         <header class="pdf_title">pdf的名字</header>
-        <main
-          class="pdf_wrapper"
-          ref="pdf_wrapper"
-          @mousewheel="throttledScroll"
-        >
+        <main class="pdf_wrapper" ref="pdf_wrapper" @scroll="throttledScroll">
           <ul class="pdf_list" ref="pdf_list">
             <li v-for="item in imgList" :key="item" class="pdf_item">
               <img :src="item" alt="preview" class="pdf" />
@@ -72,6 +68,12 @@ export default class Home extends Vue {
     const { height } = navItem.getBoundingClientRect();
     return height;
   }
+  private get isNavScroll() {
+    const { clientHeight, scrollHeight } = this.$refs[
+      "nav_wrapper"
+    ] as HTMLElement;
+    return scrollHeight > clientHeight;
+  }
   private currentIndex = 0;
 
   private handleClickNav(index: number) {
@@ -79,19 +81,19 @@ export default class Home extends Vue {
     this.currentIndex = index;
     (this.$refs["pdf_wrapper"] as HTMLElement).scrollTo({
       top: this.singlePdfHeight * index,
-      behavior: "smooth",
     });
     (this.$refs["nav_wrapper"] as HTMLElement).scrollTo({
       top: this.singleNavHeight * index,
-      behavior: "smooth",
     });
   }
 
   private handleScroll() {
     const { scrollTop } = this.$refs.pdf_wrapper as HTMLElement;
-    const scrollY = scrollTop * (this.singleNavHeight / this.singlePdfHeight);
-    (this.$refs["nav_wrapper"] as HTMLElement).scrollTop = scrollY;
     this.currentIndex = Math.round(scrollTop / this.singlePdfHeight);
+    if (this.isNavScroll) {
+      const scrollY = scrollTop * (this.singleNavHeight / this.singlePdfHeight);
+      (this.$refs["nav_wrapper"] as HTMLElement).scrollTop = scrollY;
+    }
   }
 
   private throttledScroll = _.throttle(this.handleScroll, 20);
