@@ -12,7 +12,7 @@
             v-for="(item, index) in imgList"
             :key="item"
             :class="['nav_item', { active: index === currentIndex }]"
-            @click="checkNav(index)"
+            @click="handleClickNav(index)"
           >
             <img :src="item" alt="缩略图" class="nav" />
             <p class="page_number">{{ index + 1 }}</p>
@@ -21,14 +21,20 @@
       </nav>
       <section class="section">
         <header class="pdf_title">pdf的名字</header>
-        <main class="pdf_wrapper" ref="pdf_wrapper" @scroll="throttledScroll">
+        <main
+          class="pdf_wrapper"
+          ref="pdf_wrapper"
+          @mousewheel="throttledScroll"
+        >
           <ul class="pdf_list" ref="pdf_list">
             <li v-for="item in imgList" :key="item" class="pdf_item">
               <img :src="item" alt="preview" class="pdf" />
             </li>
           </ul>
         </main>
-        <footer class="pdf_pagination">{{ currentIndex }}/{{ count }}</footer>
+        <footer class="pdf_pagination">
+          {{ currentIndex + 1 }}/{{ count }}
+        </footer>
       </section>
       <aside class="aside">pdf列表</aside>
     </main>
@@ -56,35 +62,36 @@ export default class Home extends Vue {
   private get count() {
     return this.imgList.length;
   }
+  private get singlePdfHeight() {
+    const pdfItem = document.getElementsByClassName("pdf_item")[0];
+    const { height } = pdfItem.getBoundingClientRect();
+    return height;
+  }
+  private get singleNavHeight() {
+    const navItem = document.getElementsByClassName("nav_item")[0];
+    const { height } = navItem.getBoundingClientRect();
+    return height;
+  }
   private currentIndex = 0;
-  private clickEvent = false;
 
-  private checkNav(index: number) {
+  private handleClickNav(index: number) {
     if (index === this.currentIndex) return;
-    this.clickEvent = true;
     this.currentIndex = index;
-    document.getElementsByClassName("pdf_item")[index].scrollIntoView({
+    (this.$refs["pdf_wrapper"] as HTMLElement).scrollTo({
+      top: this.singlePdfHeight * index,
       behavior: "smooth",
     });
-    setTimeout(() => {
-      this.clickEvent = false;
-    }, 1000);
+    (this.$refs["nav_wrapper"] as HTMLElement).scrollTo({
+      top: this.singleNavHeight * index,
+      behavior: "smooth",
+    });
   }
 
   private handleScroll() {
-    if (this.clickEvent) return;
-    const pdfWrapper = this.$refs.pdf_wrapper as HTMLElement;
-    if (!pdfWrapper) return;
-    const { scrollTop } = pdfWrapper;
-    const { height } = document
-      .getElementsByClassName("pdf_item")[0]
-      .getBoundingClientRect();
-    const { height: navHeight } = document
-      .getElementsByClassName("nav_item")[0]
-      .getBoundingClientRect();
-    this.currentIndex = Math.round(scrollTop / height);
-    const scrollY = scrollTop * (navHeight / height);
-    document.getElementsByClassName("nav_wrapper")[0].scrollTop = scrollY;
+    const { scrollTop } = this.$refs.pdf_wrapper as HTMLElement;
+    const scrollY = scrollTop * (this.singleNavHeight / this.singlePdfHeight);
+    (this.$refs["nav_wrapper"] as HTMLElement).scrollTop = scrollY;
+    this.currentIndex = Math.round(scrollTop / this.singlePdfHeight);
   }
 
   private throttledScroll = _.throttle(this.handleScroll, 20);
@@ -108,6 +115,7 @@ export default class Home extends Vue {
 .nav_wrapper {
   height: 100%;
   overflow-y: auto;
+  transition: all 0.3s;
 }
 .nav_list {
   width: 108px;
@@ -116,6 +124,12 @@ export default class Home extends Vue {
 .nav_item {
   margin: 30px auto;
   cursor: pointer;
+  // &:hover {
+  //   color: #2994ff;
+  //   .nav {
+  //     border-color: #2994ff;
+  //   }
+  // }
 }
 .nav {
   width: 108px;
