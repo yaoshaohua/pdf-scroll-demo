@@ -57,19 +57,24 @@ export default class Home extends Vue {
     return this.imgList.length;
   }
   private currentIndex = 0;
+  private clickEvent = false;
 
   private checkNav(index: number) {
     if (index === this.currentIndex) return;
+    this.clickEvent = true;
     this.currentIndex = index;
     document.getElementsByClassName("pdf_item")[index].scrollIntoView({
       behavior: "smooth",
     });
+    setTimeout(() => {
+      this.clickEvent = false;
+    }, 1000);
   }
 
   private handleScroll() {
+    if (this.clickEvent) return;
     const pdfWrapper = this.$refs.pdf_wrapper as HTMLElement;
     if (!pdfWrapper) return;
-
     const { scrollTop } = pdfWrapper;
     const { height } = document
       .getElementsByClassName("pdf_item")[0]
@@ -77,7 +82,6 @@ export default class Home extends Vue {
     const { height: navHeight } = document
       .getElementsByClassName("nav_item")[0]
       .getBoundingClientRect();
-
     this.currentIndex = Math.round(scrollTop / height);
     const scrollY = scrollTop * (navHeight / height);
     document.getElementsByClassName("nav_wrapper")[0].scrollTop = scrollY;
